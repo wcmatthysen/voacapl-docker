@@ -1,0 +1,27 @@
+#!/bin/bash
+
+VOACAPL_GITHUB_URL="https://github.com/jawatson/voacapl"
+
+# See if we have already pulled the docker image.
+docker image inspect wcmatthysen/voacapl:latest >/dev/null 2>&1
+
+# If we haven't pulled it before, then pull it.
+if [ $? -ne 0 ]; then
+    echo "Pulling docker-image"
+    docker pull wcmatthysen/voacapl
+fi
+
+# If either the run or areadata directories are missing, then download them.
+if [ ! -d "run" ] || [ ! -d "areadata" ]; then
+    echo "Downloading run and areadata directories from $VOACAPL_GITHUB_URL"
+    base_dir="voacapl-master/voacapl/itshfbc"
+    wget -qO- "$VOACAPL_GITHUB_URL/archive/master.tar.gz" | \
+        tar xzp "$base_dir/run" "$base_dir/areadata" --strip=3
+fi
+
+# Finally, run the voacapl command in a docker container.
+# We expose the local run and areadata directories as volumes inside container.
+docker run --rm -v ${PWD}/run:/home/voacap/itshfbc/run \
+    -v ${PWD}/areadata:/home/voacap/itshfbc/areadata \
+    wcmatthysen/voacapl voacapl "$@"
+
